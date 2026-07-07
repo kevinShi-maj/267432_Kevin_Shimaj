@@ -28,7 +28,7 @@ if __name__ == "__main__":
     )
 
     vocab_len = len(tokenizer)
-    lr = 0.1  # notebook default ("not good for AdamW") — baseline run only, then Step 0 sweep
+    lr = 1e-3  # Step 0 lr sweep: {5e-4, 1e-3, 2e-3, 5e-3}
 
     model = GPT2(
         vocab_len,
