@@ -28,12 +28,11 @@ if __name__ == "__main__":
     )
 
     vocab_len = len(tokenizer)
-    lr = 5e-4  # Step 0 lr sweep: {5e-4, 1e-3, 2e-3, 5e-3} — done: 0.1 (baseline), 1e-3, 2e-3, 5e-3
-
+    lr = 1e-3 # best LR found 
     model = GPT2(
         vocab_len,
         pos_emb_size=1024,
-        d_model=20,
+        d_model=128,  # Step 1.1: 20 -> 128 (ladder: 128 -> 256 -> 384)
         n_heads=1,
         num_layers=1,
         ff_dim=20,
