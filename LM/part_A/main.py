@@ -32,8 +32,8 @@ if __name__ == "__main__":
     model = GPT2(
         vocab_len,
         pos_emb_size=1024,
-        d_model=384,  # Step 1.1: ladder 20 -> 128 (45.68) -> 256 (45.53, keep) -> 384
-        n_heads=1,
+        d_model=256,  # Step 1.1 chiuso: 20 -> 128 (45.68) -> 256 (45.53, KEEP) -> 384 (45.73, revert)
+        n_heads=4,    # Step 1.2: ladder 1 -> 4 -> 8 (head_dim 256/4 = 64)
         num_layers=1,
         ff_dim=20,
     ).to(DEVICE)
