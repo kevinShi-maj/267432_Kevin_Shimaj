@@ -27,9 +27,9 @@ if __name__ == "__main__":
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # --- LoRA hyperparameters (incremental grid in MEMORY.md §1.B) ---
-    RANK = 8            # grid: 4, 8, 16, 32   — start 8
-    ALPHA = 8           # grid: rank, 2*rank   — start alpha=rank (scaling = alpha/rank = 1)
-    lr = 5e-4           # grid: 1e-4, 5e-4, 1e-3 — start 5e-4 (LoRA tolerates higher lr)
+    RANK = 8            # Step 1 (rank): grid 4, 8, 16, 32 — sweep AFTER lr is fixed
+    ALPHA = 8           # Step 2 (alpha): grid rank, 2*rank — kept = rank during lr sweep
+    lr = 1e-3           # Step 0 (lr sweep) @ r=8/a=8: 5e-4 -> dev 23.36/test 21.11 (B1). Now 1e-3, then 1e-4.
     train_batch, eval_batch = 16, 16   # drop to 8 if CUDA OOM
 
     train_raw = read_file("dataset/PennTreeBank/ptb.train.txt")
@@ -66,6 +66,7 @@ if __name__ == "__main__":
     patience = 3
     best_ppl = math.inf
     best_model = None
+    best_epoch = 0
     pbar = tqdm(range(n_epochs))
 
     for epoch in pbar:
@@ -76,6 +77,7 @@ if __name__ == "__main__":
         if ppl_dev < best_ppl:
             best_ppl = ppl_dev
             best_model = copy.deepcopy(model).to("cpu")
+            best_epoch = epoch + 1
             patience = 3
         else:
             patience -= 1
@@ -84,6 +86,7 @@ if __name__ == "__main__":
 
     os.makedirs("bin", exist_ok=True)
     torch.save(best_model.state_dict(), "bin/best_model.pt")
+    print(f"Epochs run: {epoch + 1} (best at epoch {best_epoch})")
     print("Best dev PPL:", best_ppl)
 
     best_model.to(DEVICE)
