@@ -28,7 +28,7 @@ if __name__ == "__main__":
     )
 
     vocab_len = len(tokenizer)
-    lr = 5e-4  # re-tuning su config finale: 1e-3 (dev 37.39) -> 5e-4 -> 3e-4 -> 1e-4
+    lr = 2e-3  # re-tuning su config finale: 5e-4 (39.12, revert) <- 1e-3 (37.39) -> 2e-3 (bracket alto)
     model = GPT2(
         vocab_len,
         pos_emb_size=1024,
