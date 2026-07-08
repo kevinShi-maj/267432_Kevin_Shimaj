@@ -34,7 +34,7 @@ if __name__ == "__main__":
         pos_emb_size=1024,
         d_model=256,  # Step 1.1 chiuso: 20 -> 128 (45.68) -> 256 (45.53, KEEP) -> 384 (45.73, revert)
         n_heads=8,    # Step 1.2 chiuso: 1 -> 4 (43.55) -> 8 (43.47, KEEP)
-        num_layers=2, # Step 1.3: ladder 1 -> 2 -> 4 -> 6
+        num_layers=4, # Step 1.3: ladder 1 -> 2 (42.25, keep) -> 4 -> 6
         ff_dim=20,
     ).to(DEVICE)
     model.apply(init_weights)
