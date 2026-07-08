@@ -34,8 +34,8 @@ if __name__ == "__main__":
         pos_emb_size=1024,
         d_model=256,  # Step 1.1 chiuso: 20 -> 128 (45.68) -> 256 (45.53, KEEP) -> 384 (45.73, revert)
         n_heads=8,    # Step 1.2 chiuso: 1 -> 4 (43.55) -> 8 (43.47, KEEP)
-        num_layers=6, # Step 1.3: ladder 1 -> 2 (42.25) -> 4 (41.34, keep) -> 6
-        ff_dim=20,
+        num_layers=6, # Step 1.3 chiuso: 1 -> 2 (42.25) -> 4 (41.34) -> 6 (40.82, KEEP)
+        ff_dim=1024,  # Step 1.4: 4 * d_model (convenzione GPT2)
     ).to(DEVICE)
     model.apply(init_weights)
 
