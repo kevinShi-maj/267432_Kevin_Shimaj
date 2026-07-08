@@ -33,8 +33,8 @@ if __name__ == "__main__":
         vocab_len,
         pos_emb_size=1024,
         d_model=256,  # Step 1.1 chiuso: 20 -> 128 (45.68) -> 256 (45.53, KEEP) -> 384 (45.73, revert)
-        n_heads=8,    # Step 1.2: ladder 1 -> 4 (43.55, keep) -> 8 (head_dim 256/8 = 32)
-        num_layers=1,
+        n_heads=8,    # Step 1.2 chiuso: 1 -> 4 (43.55) -> 8 (43.47, KEEP)
+        num_layers=2, # Step 1.3: ladder 1 -> 2 -> 4 -> 6
         ff_dim=20,
     ).to(DEVICE)
     model.apply(init_weights)
