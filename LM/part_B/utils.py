@@ -1,8 +1,4 @@
-# Data loading / preprocessing for Part 1.B.
-# Same Penn TreeBank pipeline and same GPT2 BPE tokenizer as 1.A. The ONLY
-# difference is the collate_fn: GPT2LMHeadModel shifts the labels internally, so
-# here we do NOT pre-shift by one (unlike 1.A). We pass full input_ids and a copy
-# of them as labels, with pad positions set to -100 (HF's ignore index).
+# Data loading and preprocessing for Part 1.B: same Penn TreeBank pipeline as 1.A.
 
 import torch
 import torch.utils.data as data
@@ -34,14 +30,13 @@ def collate_fn(batch, tokenizer, device):
     input_ids = tokenized.input_ids.to(device)
     attention_mask = tokenized.attention_mask.to(device)
 
-    # HF computes the causal-LM shift internally: logits[:, :-1] vs labels[:, 1:].
-    # So we hand it the SAME ids as labels (no manual shift, per project spec §5.3)
-    # and mask pad with -100 so those positions are ignored by the loss.
+    # GPT2LMHeadModel applies the causal shift itself (logits[:, :-1] vs labels[:, 1:]),
+    # so labels are an unshifted copy of the input, unlike in 1.A where we shift by hand.
     labels = input_ids.clone()
     labels[labels == tokenizer.pad_token_id] = -100
 
-    # Tokens that actually contribute to the loss = the shifted, non-ignored ones.
-    # Used for token-weighted PPL aggregation across batches (same convention as 1.A).
+    # Number of positions the loss is actually averaged over, needed to weight each
+    # batch when aggregating perplexity across the epoch (same convention as 1.A).
     n_tokens = (labels[:, 1:] != -100).sum()
     return input_ids, attention_mask, labels, n_tokens
 

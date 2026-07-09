@@ -21,6 +21,8 @@ if __name__ == "__main__":
     test_raw  = read_file("dataset/PennTreeBank/ptb.test.txt")
 
     tokenizer = AutoTokenizer.from_pretrained("openai-community/gpt2")
+    # GPT2 ships no pad token; aliasing it to eos lets the batch be padded, and the
+    # same id is then given to CrossEntropyLoss as ignore_index.
     tokenizer.pad_token = tokenizer.eos_token
 
     train_loader, dev_loader, test_loader = get_dataloaders(
@@ -28,14 +30,14 @@ if __name__ == "__main__":
     )
 
     vocab_len = len(tokenizer)
-    lr = 2e-3  # best: re-tune su config finale (5e-4: 39.12 | 1e-3: 37.39 | 2e-3: 37.09)
+    lr = 2e-3
     model = GPT2(
         vocab_len,
         pos_emb_size=1024,
-        d_model=256,  # Step 1.1 chiuso: 20 -> 128 (45.68) -> 256 (45.53, KEEP) -> 384 (45.73, revert)
-        n_heads=8,    # Step 1.2 chiuso: 1 -> 4 (43.55) -> 8 (43.47, KEEP)
-        num_layers=6, # Step 1.3 chiuso: 1 -> 2 (42.25) -> 4 (41.34) -> 6 (40.82, KEEP)
-        ff_dim=1024,  # Step 1.4: 4 * d_model (convenzione GPT2)
+        d_model=256,
+        n_heads=8,
+        num_layers=6,
+        ff_dim=1024,
     ).to(DEVICE)
     model.apply(init_weights)
 

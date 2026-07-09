@@ -1,8 +1,6 @@
-# Part 1.B — Manual LoRA (Low-Rank Adaptation) on pre-trained GPT2.
-# Reference: Hu et al. 2021, "LoRA: Low-Rank Adaptation of Large Language Models"
-#            (arXiv:2106.09685). PEFT and similar libraries are NOT used — every
-#            adapter below is hand-written.
-#
+# Part 1.B — LoRA (Hu et al. 2021, arXiv:2106.09685) on pre-trained GPT2.
+# The adapters are hand-written: PEFT and similar libraries are not allowed here.
+
 from typing import Optional, Tuple, Union
 
 import torch
@@ -13,19 +11,12 @@ from transformers.models.gpt2.modeling_gpt2 import GPT2Attention
 
 
 class LoRALinear(nn.Module):
-    """One low-rank adapter for a single projection (Q, K or V).
+    """Low-rank adapter for one projection: h = W0 x + (alpha / rank) * B(A(x)).
 
-    Implements the LoRA reparametrisation from Hu et al. 2021, §4.1:
-
-        h = W0 x + ΔW x,   ΔW = B A,   ΔW x scaled by (alpha / rank)
-
-    A : d_model -> rank   (down-projection), init ~ N(0,1)  (paper: random Gaussian)
-    B : rank -> d_model   (up-projection),   init = 0
-
-    Because B = 0 at init, ΔW = B A = 0, so the adapted model starts EXACTLY at the
-    pre-trained weights (paper §4.1: "ΔW = 0 at the beginning of training"). The
-    factor alpha/rank makes tuning alpha roughly equivalent to tuning the learning
-    rate and lets us change rank without re-tuning everything (paper §4.1).
+    The rank bottleneck encodes the paper's assumption that the weight update needed
+    to adapt the model has a low intrinsic rank. Scaling by alpha / rank keeps the
+    size of the update roughly constant when rank changes, so the two can be tuned
+    independently.
     """
 
     def __init__(self, d_model: int, rank: int, alpha: int):
@@ -39,7 +30,8 @@ class LoRALinear(nn.Module):
         self.reset_lora_parameters()
 
     def reset_lora_parameters(self):
-        # A random Gaussian, B zero -> ΔW = 0 at step 0 (Hu et al. §4.1).
+        # Zeroing B makes the whole update B(A(x)) vanish at step 0, so fine-tuning
+        # starts exactly at the pre-trained weights instead of perturbing them.
         nn.init.normal_(self.lora_A.weight)
         nn.init.zeros_(self.lora_B.weight)
 
@@ -48,13 +40,12 @@ class LoRALinear(nn.Module):
 
 
 class CustomGPT2Attention(GPT2Attention):
-    """GPT2 self-attention with LoRA on the Q, K, V projections.
+    """GPT2 self-attention with a separate LoRA adapter on each of Q, K and V.
 
-    GPT2 packs Q, K, V into a single Conv1D `c_attn` mapping d_model -> 3*d_model.
-    We keep `c_attn` frozen and add three independent LoRA deltas (one per Q/K/V),
-    all computed from the same `hidden_states`, immediately after the split — this
-    is the transformer-specific placement recommended in the paper (§4.2: "we limit
-    our study to only adapting the attention weights").
+    GPT2 computes the three projections with a single Conv1D (`c_attn`, d_model to
+    3 * d_model), so the adapters cannot wrap them individually. They are instead
+    applied to the same input and added to the three slices after the split, which
+    is equivalent to adapting Wq, Wk and Wv separately.
     """
 
     def __init__(self, config, rank, alpha):
@@ -64,8 +55,8 @@ class CustomGPT2Attention(GPT2Attention):
         self.lora_k = LoRALinear(d_model, rank, alpha)
         self.lora_v = LoRALinear(d_model, rank, alpha)
 
-    # forward copied from transformers v4.38.0; LoRA deltas injected in the
-    # self-attention branch only (cross-attention branch left untouched).
+    # Body copied verbatim from transformers v4.38.0 so that the attention internals
+    # stay in sync with the pinned version; only the three additions below are ours.
     def forward(
         self,
         hidden_states: Optional[Tuple[torch.FloatTensor]],
@@ -89,11 +80,9 @@ class CustomGPT2Attention(GPT2Attention):
             attention_mask = encoder_attention_mask
         else:
             query, key, value = self.c_attn(hidden_states).split(self.split_size, dim=2)
-            # ---- LoRA injection: h = W0 x + (alpha/rank) B A x, for Q, K, V ----
             query = query + self.lora_q(hidden_states)
             key = key + self.lora_k(hidden_states)
             value = value + self.lora_v(hidden_states)
-            # -------------------------------------------------------------------
 
         query = self._split_heads(query, self.num_heads, self.head_dim)
         key = self._split_heads(key, self.num_heads, self.head_dim)
@@ -126,7 +115,7 @@ class CustomGPT2Attention(GPT2Attention):
 
 
 class GPT2_LoRA(GPT2LMHeadModel):
-    """Pre-trained GPT2-small with every attention block replaced by a LoRA one.
+    """Pre-trained GPT2 whose attention blocks are replaced by LoRA-adapted ones.
 
     Build with `GPT2_LoRA.from_pretrained("openai-community/gpt2", rank=r, alpha=a)`.
     """
@@ -137,17 +126,16 @@ class GPT2_LoRA(GPT2LMHeadModel):
         self.lora_alpha = alpha
         for block in self.transformer.h:
             new_attn = CustomGPT2Attention(self.config, rank=rank, alpha=alpha)
-            # copy the pre-trained attention weights (c_attn/c_proj/bias); strict=False
-            # because the LoRA layers are new and absent from the old state_dict.
+            # strict=False: the adapters are new, so they have no entry in the old
+            # attention state_dict and would otherwise be reported as missing keys.
             new_attn.load_state_dict(block.attn.state_dict(), strict=False)
             block.attn = new_attn
 
     def _init_weights(self, module):
-        # from_pretrained() re-initialises every "missing" parameter (all lora_*)
-        # via _init_weights AFTER __init__. GPT2's default _init_weights treats
-        # lora_B as a plain nn.Linear and would fill it with N(0, 0.02), destroying
-        # the B=0 property that guarantees ΔW=0 at start. We override to re-assert
-        # the paper's init on LoRALinear. (Pitfall: "B not zero-initialized".)
+        # from_pretrained() re-initialises whatever the checkpoint does not provide,
+        # which includes every adapter. Left to the default GPT2 rule, lora_B would be
+        # filled from a normal distribution and the update would no longer be zero at
+        # step 0, so the adapter init has to be re-asserted here.
         super()._init_weights(module)
         if isinstance(module, LoRALinear):
             module.reset_lora_parameters()

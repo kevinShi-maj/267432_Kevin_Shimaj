@@ -1,6 +1,4 @@
 # Part 1.B — fine-tune pre-trained GPT2 on Penn TreeBank with hand-written LoRA.
-# Run:  python main.py   (from inside LM/part_B/)
-# Target: test PPL < 250 AND test PPL(1.B) < test PPL(1.A) = 33.68.
 
 from functions import param_stats, freeze_non_lora, train_loop, eval_loop
 from model import GPT2_LoRA
@@ -26,35 +24,36 @@ if __name__ == "__main__":
 
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    # --- LoRA hyperparameters (incremental grid in MEMORY.md §1.B) ---
-    RANK = 8            # Step 1 (rank): grid 4, 8, 16, 32 — sweep AFTER lr is fixed
-    ALPHA = 8           # Step 2 (alpha): grid rank, 2*rank — kept = rank during lr sweep
-    lr = 1e-3           # Step 0 (lr sweep) @ r=8/a=8: 5e-4 -> dev 23.36/test 21.11 (B1). Now 1e-3, then 1e-4.
-    train_batch, eval_batch = 16, 16   # drop to 8 if CUDA OOM
+    RANK = 8
+    ALPHA = 8
+    lr = 1e-3
+    train_batch, eval_batch = 16, 16
 
     train_raw = read_file("dataset/PennTreeBank/ptb.train.txt")
     dev_raw   = read_file("dataset/PennTreeBank/ptb.valid.txt")
     test_raw  = read_file("dataset/PennTreeBank/ptb.test.txt")
 
     tokenizer = AutoTokenizer.from_pretrained("openai-community/gpt2")
-    tokenizer.pad_token = tokenizer.eos_token  # GPT2 has no pad token (mandatory)
+    # GPT2 ships no pad token; aliasing it to eos lets the batch be padded, and the
+    # same id is then masked out with -100 in the collate function.
+    tokenizer.pad_token = tokenizer.eos_token
 
     train_loader, dev_loader, test_loader = get_dataloaders(
         train_raw, dev_raw, test_raw, tokenizer, DEVICE, train_batch, eval_batch
     )
 
-    # Build pre-trained GPT2, swap in LoRA attention blocks.
     model = GPT2_LoRA.from_pretrained("openai-community/gpt2", rank=RANK, alpha=ALPHA).to(DEVICE)
-
-    # Train ONLY the LoRA adapters.
     freeze_non_lora(model)
+
     print(f"\n=== LoRA config: rank={RANK}, alpha={ALPHA}, scaling={ALPHA / RANK:g}, lr={lr} ===")
     param_stats(model)
+
+    # The two invariants that make LoRA fail silently rather than crash: a wrong
+    # number of trainable adapters (freezing or optimizer misconfigured), and a
+    # non-zero B, which would mean training does not start at the pre-trained weights.
     expected = model.config.n_layer * 6 * RANK * model.config.n_embd
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     assert trainable == expected, f"trainable {trainable} != expected {expected} (n_layer*6*rank*d_model)"
-
-    # Sanity: ΔW must be 0 at init (B=0), so 1.B starts exactly at the pre-trained model.
     for name, p in model.named_parameters():
         if "lora_B" in name:
             assert torch.count_nonzero(p).item() == 0, f"{name} is not zero-initialised — ΔW != 0 at start!"

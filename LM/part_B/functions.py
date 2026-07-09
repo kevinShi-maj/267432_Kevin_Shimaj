@@ -1,8 +1,6 @@
-# Training / evaluation loops and helpers for Part 1.B.
-# The model is a HuggingFace GPT2LMHeadModel subclass, so it returns the loss
-# itself (output.loss) — we do NOT build a separate criterion here, unlike 1.A.
-# PPL is aggregated token-weighted across batches (same convention as 1.A) so the
-# two parts' perplexities are directly comparable.
+# Training and evaluation loops for Part 1.B. The model is a GPT2LMHeadModel subclass
+# and returns its own loss, so no criterion is built here, unlike in 1.A. Perplexity is
+# still aggregated token-weighted across batches, to stay comparable with 1.A.
 
 import math
 import torch
@@ -19,12 +17,7 @@ def param_stats(model):
 
 
 def freeze_non_lora(model):
-    """Freeze everything, then unfreeze only the LoRA adapters.
-
-    LoRA fine-tuning trains ONLY the injected low-rank matrices; the whole
-    pre-trained GPT2 stays frozen (Hu et al. §4.1). Every trainable parameter
-    name therefore contains "lora_".
-    """
+    """Make the LoRA adapters the only trainable parameters, per Hu et al. section 4.1."""
     for p in model.parameters():
         p.requires_grad = False
     for name, p in model.named_parameters():
