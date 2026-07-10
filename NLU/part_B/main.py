@@ -35,7 +35,7 @@ if __name__ == "__main__":
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # ---- experiment config -------------------------------------------------
-    models_to_run = ["bert"]
+    models_to_run = ["gpt2"]
 
     # single seed for the lr grid; final protocol: [0, 1, 2, 3, 4]
     seeds = [42]
