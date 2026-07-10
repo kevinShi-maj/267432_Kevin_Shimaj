@@ -38,9 +38,11 @@ if __name__ == "__main__":
         n_heads=8,
         num_layers=6,
         ff_dim=1024,
-        dropout=0.2,  # Step 2: 0.1 KEEP (dev 35.07, riga #17) — ora 0.2; se peggiora revert a 0.1
+        dropout=0.2,  # Step 2 CHIUSO: 0.2 best (dev 33.79, riga #18)
     ).to(DEVICE)
     model.apply(init_weights)
+    # init_weights must not break the tie (same Parameter object survives in-place re-init)
+    assert model.lm_head.weight is model.token_embed.weight, "weight tying broken"
 
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     criterion_train = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
