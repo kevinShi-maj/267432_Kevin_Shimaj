@@ -17,14 +17,13 @@ if __name__ == "__main__":
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # ---- experiment config -------------------------------------------------
-    # Step 0: lr=5e-3. Step 1.1: d_model=128. Step 1.2: n_heads=1 (4 heads lose,
-    # head_dim 32 too narrow at this width). Step 1.3: num_layers ladder.
-    # lr x depth check at num_layers=2 (same confounder seen at d_model=256)
-    lr = 2e-3
+    # Step 0: lr=5e-3. Step 1.1: d_model=128. Step 1.2: n_heads=1. Step 1.3:
+    # num_layers=1 (2 layers lose even at adjusted lr). Step 1.4: ff_dim=4*d_model.
+    lr = 5e-3
     d_model = 128
     n_heads = 1
-    num_layers = 2
-    ff_dim = 20
+    num_layers = 1
+    ff_dim = 512
     dropout = 0.0  # Step 2: 0.1, then 0.2
 
     # single seed for the incremental ladder; final protocol: [0, 1, 2, 3, 4]
