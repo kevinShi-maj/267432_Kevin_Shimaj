@@ -137,7 +137,7 @@ if __name__ == "__main__":
                 os.makedirs("bin", exist_ok=True)
                 torch.save(best_model.state_dict(), "bin/best_model_%s.pt" % model_key)
 
-            # free GPU memory before the next run (two full models in one script)
+            # free GPU memory before the next run 
             del model, best_model
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
