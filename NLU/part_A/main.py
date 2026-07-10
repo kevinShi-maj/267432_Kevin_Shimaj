@@ -29,7 +29,9 @@ if __name__ == "__main__":
     seeds = [42]
 
     n_epochs = 200
-    patience_max = 999  # DIAGNOSTIC: early stop off to observe the full dev F1 curve; restore 3 afterwards
+    # lab default is 3, but one ATIS epoch = ~35 updates: rescaled to 10 based on
+    # the longest no-improvement stall (10 epochs) seen in the diagnostic F1 curve
+    patience_max = 10
     # ------------------------------------------------------------------------
 
     tmp_train_raw = load_data(os.path.join("dataset", "ATIS", "train.json"))
