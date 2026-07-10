@@ -49,9 +49,9 @@ def eval_loop(data, criterion_slots, criterion_intents, model, lang):
             ref_intents.extend(gt_intents)
             hyp_intents.extend(out_intents)
 
-            # slot inference: read predictions ONLY at first-subtoken positions
-            # (where y_slots != IGNORE_ID) and map them back to the original words,
-            # so refs and hyps have identical word sequences for conll
+            # slot inference: predictions read ONLY at first-subtoken positions
+            # (y_slots != IGNORE_ID), mapped back to words so refs and hyps
+            # carry identical word sequences for conll
             output_slots = torch.argmax(slots, dim=1)
             for id_seq, seq in enumerate(output_slots):
                 valid = batch['y_slots'][id_seq] != IGNORE_ID

@@ -18,14 +18,14 @@ MODEL_CONFIGS = {
     "bert": {
         "model_name": "bert-base-uncased",
         "cls": BertForNLU,
-        "lr": 5e-5,               # grid closed: 5e-5 (dev tie, best nominal + fastest)
+        "lr": 5e-5,
         "tokenizer_kwargs": {},
     },
     "gpt2": {
         "model_name": "openai-community/gpt2",
         "cls": GPT2ForNLU,
-        # fast tokenizer needs add_prefix_space=True for pre-split words
-        "lr": 1e-4,               # grid closed: 1e-4 (dev tie, cleanest convergence)
+        "lr": 1e-4,
+        # the fast tokenizer requires this flag to accept pre-split words
         "tokenizer_kwargs": {"add_prefix_space": True},
     },
 }
@@ -34,24 +34,18 @@ MODEL_CONFIGS = {
 if __name__ == "__main__":
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    # ---- experiment config -------------------------------------------------
     models_to_run = ["bert", "gpt2"]
-
-    # final 5-run protocol on the best config per model
-    seeds = [0, 1, 2, 3, 4]
+    seeds = [0, 1, 2, 3, 4]  # 5-run protocol; single seed for one-off experiments
 
     train_batch, eval_batch = 32, 64
     n_epochs = 30
-    # 140 updates/epoch and a pre-trained start: convergence expected < 10 epochs,
-    # no collapse phase — lab patience works here (F1=0 guard kept just in case)
     patience_max = 3
-    # ------------------------------------------------------------------------
 
     tmp_train_raw = load_data(os.path.join("dataset", "ATIS", "train.json"))
     test_raw = load_data(os.path.join("dataset", "ATIS", "test.json"))
     train_raw, dev_raw = create_dev_set(tmp_train_raw)
 
-    # labels from the whole corpus (no unk wanted on labels), as in 2.A
+    # labels from the whole corpus (no unk on labels), as in 2.A
     corpus = train_raw + dev_raw + test_raw
     slots = set(sum([line['slots'].split() for line in corpus], []))
     intents = set([line['intent'] for line in corpus])
@@ -80,8 +74,7 @@ if __name__ == "__main__":
             random.seed(seed)
             np.random.seed(seed)
 
-            # full fine-tune: all params trainable, fresh heads on top;
-            # no init_weights here — it would wipe the pre-trained weights
+            # full fine-tune; no init_weights: it would wipe the pre-trained weights
             model = cfg['cls'](slots_len, n_intents, model_name=cfg['model_name']).to(DEVICE)
 
             optimizer = optim.AdamW(model.parameters(), lr=cfg['lr'])

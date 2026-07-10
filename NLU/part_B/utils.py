@@ -17,9 +17,9 @@ def load_data(path):
 
 
 def create_dev_set(tmp_train_raw, portion=0.10):
-    """10% of train as dev, stratified on intent (same split as 2.A: random_state=42).
+    """10% of train as dev, stratified on intent (same split as 2.A).
 
-    Intents occurring once cannot be stratified, so they go straight into train.
+    Intents occurring once cannot be stratified: they go straight into train.
     """
     intents = [x['intent'] for x in tmp_train_raw]
     count_y = Counter(intents)
@@ -46,10 +46,9 @@ def create_dev_set(tmp_train_raw, portion=0.10):
 
 
 class Lang():
-    """Label mappings only (no word2id, no cls: the HF tokenizer handles both).
+    """Label mappings only: word2id is replaced by the HF tokenizer.
 
-    slot2id keeps 'pad'=0 as in 2.A for consistency; it is never used as a target
-    here — ignored positions get IGNORE_ID instead.
+    slot2id keeps 'pad'=0 as in 2.A, but ignored positions use IGNORE_ID here.
     """
 
     def __init__(self, intents, slots):
@@ -102,12 +101,11 @@ class IntentsAndSlots(data.Dataset):
 
 def collate_fn(data, tokenizer, device):
     utterances = [d['utterance'] for d in data]
-    # never re-split text manually: is_split_into_words + word_ids() keep the
-    # subtoken→word map exact (GPT2's leading-space marker becomes irrelevant)
+    # tokenize pre-split words: word_ids() gives the exact subtoken→word map
     enc = tokenizer(utterances, is_split_into_words=True, padding=True, return_tensors='pt')
 
-    # first-subtoken alignment: the word's label goes on its first subtoken;
-    # special tokens, padding and continuation subtokens get IGNORE_ID
+    # each word's label goes on its FIRST subtoken; special tokens, padding
+    # and continuation subtokens get IGNORE_ID (arXiv:1902.10909)
     y_slots = torch.full(enc.input_ids.shape, IGNORE_ID, dtype=torch.long)
     for i, d in enumerate(data):
         prev = None
@@ -117,7 +115,7 @@ def collate_fn(data, tokenizer, device):
             prev = wid
 
     intent = torch.LongTensor([d['intent'] for d in data])
-    # real (non-pad) subtokens per sequence — the GPT2 intent head reads position slots_len-1
+    # real (non-pad) subtokens per sequence; the GPT2 intent head reads slots_len-1
     slots_len = enc.attention_mask.sum(dim=1)
 
     new_item = {}
@@ -126,7 +124,7 @@ def collate_fn(data, tokenizer, device):
     new_item['y_slots'] = y_slots.to(device)
     new_item['intents'] = intent.to(device)
     new_item['slots_len'] = slots_len.to(device)
-    new_item['words'] = utterances  # word-level, for the (word, label) pairs in eval
+    new_item['words'] = utterances  # original words, needed by conll in eval
     return new_item
 
 

@@ -11,12 +11,13 @@ class BertForNLU(nn.Module):
         self.slot_out = nn.Linear(d_model, n_slots)
         self.intent_out = nn.Linear(d_model, n_intents)
 
-    # slots_len accepted (and ignored) so both models share the same call signature
+    # slots_len unused: kept so both models share the same call signature
     def forward(self, input_ids, attention_mask, slots_len=None):
         out = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         seq = out.last_hidden_state              # (B, L, d_model)
         slots = self.slot_out(seq)               # (B, L, n_slots)
-        intent = self.intent_out(seq[:, 0])      # [CLS] is at position 0
+        # [CLS] at position 0: bidirectional attention sees the whole sentence
+        intent = self.intent_out(seq[:, 0])
         return slots, intent
 
 
@@ -32,8 +33,8 @@ class GPT2ForNLU(nn.Module):
         out = self.gpt2(input_ids=input_ids, attention_mask=attention_mask)
         seq = out.last_hidden_state
         slots = self.slot_out(seq)
-        # intent from the last real (non-pad) token; position 0 has seen nothing
-        # under the causal mask, and pad positions carry no information
+        # intent from the last real (non-pad) token: with the causal mask it is
+        # the only position that has seen the whole sentence
         cls_tokens = torch.stack([seq[i, slots_len[i] - 1] for i in range(seq.shape[0])])
         intent = self.intent_out(cls_tokens)
         return slots, intent

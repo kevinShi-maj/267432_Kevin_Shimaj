@@ -38,6 +38,7 @@ if __name__ == "__main__":
         n_heads=8,
         num_layers=6,
         ff_dim=1024,
+        dropout=0.1,  # Step 2: dropout ladder (0.1 first, then 0.2 if it helps)
     ).to(DEVICE)
     model.apply(init_weights)
 
