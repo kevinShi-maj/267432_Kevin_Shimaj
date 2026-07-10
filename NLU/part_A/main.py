@@ -17,11 +17,11 @@ if __name__ == "__main__":
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # ---- experiment config -------------------------------------------------
-    # Step 0 closed: lr=5e-3 (dev F1 0.9417). Step 1: scale one knob at a time.
-    # lr x width check at d_model=256 (guide: "readjust lr for larger models")
-    lr = 2e-3
-    d_model = 256
-    n_heads = 1
+    # Step 0 closed: lr=5e-3. Step 1.1 closed: d_model=128 (256 loses even with
+    # adjusted lr). Step 1.2: n_heads ladder at head_dim = d_model / n_heads.
+    lr = 5e-3
+    d_model = 128
+    n_heads = 4
     num_layers = 1
     ff_dim = 20
     dropout = 0.0  # Step 2: 0.1, then 0.2
