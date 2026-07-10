@@ -43,6 +43,10 @@ if __name__ == "__main__":
     model.apply(init_weights)
     # init_weights must not break the tie (same Parameter object survives in-place re-init)
     assert model.lm_head.weight is model.token_embed.weight, "weight tying broken"
+    # init_weights re-inits lm_head (nn.Linear) to uniform(-0.01, 0.01), which via the
+    # tie also flattens the embeddings — near-zero embeddings stall training (run #19).
+    # Re-init the shared matrix to the GPT-2 standard scale, good for both roles.
+    torch.nn.init.normal_(model.token_embed.weight, mean=0.0, std=0.02)
 
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     criterion_train = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
