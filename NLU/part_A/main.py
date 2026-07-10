@@ -19,7 +19,8 @@ if __name__ == "__main__":
     # ---- experiment config -------------------------------------------------
     # Step 0: lr=5e-3. Step 1.1: d_model=128. Step 1.2: n_heads=1 (4 heads lose,
     # head_dim 32 too narrow at this width). Step 1.3: num_layers ladder.
-    lr = 5e-3
+    # lr x depth check at num_layers=2 (same confounder seen at d_model=256)
+    lr = 2e-3
     d_model = 128
     n_heads = 1
     num_layers = 2
