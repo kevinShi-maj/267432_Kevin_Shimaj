@@ -18,14 +18,14 @@ MODEL_CONFIGS = {
     "bert": {
         "model_name": "bert-base-uncased",
         "cls": BertForNLU,
-        "lr": 5e-5,               # grid: {1e-5, 2e-5, 3e-5, 5e-5}
+        "lr": 5e-5,               # grid closed: 5e-5 (dev tie, best nominal + fastest)
         "tokenizer_kwargs": {},
     },
     "gpt2": {
         "model_name": "openai-community/gpt2",
         "cls": GPT2ForNLU,
         # fast tokenizer needs add_prefix_space=True for pre-split words
-        "lr": 5e-5,               # grid: {5e-5, 1e-4, 2e-4}
+        "lr": 1e-4,               # grid closed: 1e-4 (dev tie, cleanest convergence)
         "tokenizer_kwargs": {"add_prefix_space": True},
     },
 }
@@ -35,10 +35,10 @@ if __name__ == "__main__":
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # ---- experiment config -------------------------------------------------
-    models_to_run = ["gpt2"]
+    models_to_run = ["bert", "gpt2"]
 
-    # single seed for the lr grid; final protocol: [0, 1, 2, 3, 4]
-    seeds = [42]
+    # final 5-run protocol on the best config per model
+    seeds = [0, 1, 2, 3, 4]
 
     train_batch, eval_batch = 32, 64
     n_epochs = 30
