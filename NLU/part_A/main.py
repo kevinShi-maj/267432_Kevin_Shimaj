@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     # ---- experiment config -------------------------------------------------
     # Step 0 (lr sweep on the tiny lab config): lr in {5e-4, 1e-3, 5e-3}
-    lr = 5e-4
+    lr = 1e-3
     d_model = 20
     n_heads = 1
     num_layers = 1
@@ -99,7 +99,9 @@ if __name__ == "__main__":
                 best_f1 = f1_dev
                 best_model = copy.deepcopy(model).to("cpu")
                 patience = patience_max
-            else:
+            elif f1_dev > 0:
+                # F1 = 0 = collapsed all-O phase, the model cannot be judged yet:
+                # those epochs do not consume patience
                 patience -= 1
             if patience <= 0:
                 break
