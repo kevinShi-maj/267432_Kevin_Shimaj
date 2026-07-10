@@ -18,7 +18,8 @@ if __name__ == "__main__":
 
     # ---- experiment config -------------------------------------------------
     # Step 0 closed: lr=5e-3 (dev F1 0.9417). Step 1: scale one knob at a time.
-    lr = 5e-3
+    # lr x width check at d_model=256 (guide: "readjust lr for larger models")
+    lr = 2e-3
     d_model = 256
     n_heads = 1
     num_layers = 1
