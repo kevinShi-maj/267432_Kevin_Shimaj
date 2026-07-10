@@ -29,7 +29,7 @@ if __name__ == "__main__":
     seeds = [42]
 
     n_epochs = 200
-    patience_max = 3
+    patience_max = 999  # DIAGNOSTIC: early stop off to observe the full dev F1 curve; restore 3 afterwards
     # ------------------------------------------------------------------------
 
     tmp_train_raw = load_data(os.path.join("dataset", "ATIS", "train.json"))
@@ -80,6 +80,7 @@ if __name__ == "__main__":
         best_f1 = 0
         best_model = None
         epochs_run = 0
+        f1_history = []
         pbar = tqdm(range(n_epochs))
 
         for epoch in pbar:
@@ -89,6 +90,7 @@ if __name__ == "__main__":
                 dev_loader, criterion_slots, criterion_intents, model, lang
             )
             f1_dev = results_dev['total']['f']
+            f1_history.append(round(f1_dev, 4))
             pbar.set_description(
                 "Seed %d | Dev Slot F1: %.4f | Dev Intent Acc: %.4f"
                 % (seed, f1_dev, intent_dev['accuracy'])
@@ -105,6 +107,8 @@ if __name__ == "__main__":
                 patience -= 1
             if patience <= 0:
                 break
+
+        print("Seed %d — dev Slot F1 per epoch: %s" % (seed, f1_history))
 
         best_model.to(DEVICE)
         results_test, intent_test, _ = eval_loop(
