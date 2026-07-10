@@ -25,7 +25,7 @@ MODEL_CONFIGS = {
         "model_name": "openai-community/gpt2",
         "cls": GPT2ForNLU,
         # fast tokenizer needs add_prefix_space=True for pre-split words
-        "lr": 1e-4,               # grid: {5e-5, 1e-4, 2e-4}
+        "lr": 2e-4,               # grid: {5e-5, 1e-4, 2e-4}
         "tokenizer_kwargs": {"add_prefix_space": True},
     },
 }
