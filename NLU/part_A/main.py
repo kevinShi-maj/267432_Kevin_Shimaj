@@ -17,9 +17,9 @@ if __name__ == "__main__":
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # ---- experiment config -------------------------------------------------
-    # Step 0 (lr sweep on the tiny lab config): lr in {5e-4, 1e-3, 5e-3}
-    lr = 1e-2
-    d_model = 20
+    # Step 0 closed: lr=5e-3 (dev F1 0.9417). Step 1: scale one knob at a time.
+    lr = 5e-3
+    d_model = 128
     n_heads = 1
     num_layers = 1
     ff_dim = 20
