@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     # ---- experiment config -------------------------------------------------
     # Step 0 (lr sweep on the tiny lab config): lr in {5e-4, 1e-3, 5e-3}
-    lr = 5e-3
+    lr = 1e-2
     d_model = 20
     n_heads = 1
     num_layers = 1
