@@ -17,12 +17,12 @@ if __name__ == "__main__":
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # ---- experiment config -------------------------------------------------
-    # Step 0 closed: lr=5e-3. Step 1.1 closed: d_model=128 (256 loses even with
-    # adjusted lr). Step 1.2: n_heads ladder at head_dim = d_model / n_heads.
+    # Step 0: lr=5e-3. Step 1.1: d_model=128. Step 1.2: n_heads=1 (4 heads lose,
+    # head_dim 32 too narrow at this width). Step 1.3: num_layers ladder.
     lr = 5e-3
     d_model = 128
-    n_heads = 4
-    num_layers = 1
+    n_heads = 1
+    num_layers = 2
     ff_dim = 20
     dropout = 0.0  # Step 2: 0.1, then 0.2
 
