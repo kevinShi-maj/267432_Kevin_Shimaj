@@ -17,17 +17,16 @@ if __name__ == "__main__":
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # ---- experiment config -------------------------------------------------
-    # Step 1 closed: 128/1/1/512 @ lr=2e-3 (dev F1 0.9485).
-    # Step 2: dropout before the two heads, p=0.1 then 0.2.
+    # Final config (ladder closed): 128/1/1/512 @ lr=2e-3, no dropout (0.1 hurt).
     lr = 2e-3
     d_model = 128
     n_heads = 1
     num_layers = 1
     ff_dim = 512
-    dropout = 0.1
+    dropout = 0.0
 
-    # single seed for the incremental ladder; final protocol: [0, 1, 2, 3, 4]
-    seeds = [42]
+    # final 5-run protocol on the best config
+    seeds = [0, 1, 2, 3, 4]
 
     n_epochs = 200
     # lab default is 3, but one ATIS epoch = ~35 updates: rescaled to 10 based on
