@@ -19,7 +19,8 @@ if __name__ == "__main__":
     # ---- experiment config -------------------------------------------------
     # Step 0: lr=5e-3. Step 1.1: d_model=128. Step 1.2: n_heads=1. Step 1.3:
     # num_layers=1 (2 layers lose even at adjusted lr). Step 1.4: ff_dim=4*d_model.
-    lr = 5e-3
+    # lr x ff check (instability signature at 5e-3 again)
+    lr = 2e-3
     d_model = 128
     n_heads = 1
     num_layers = 1
