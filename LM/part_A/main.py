@@ -46,7 +46,10 @@ if __name__ == "__main__":
     # init_weights re-inits lm_head (nn.Linear) to uniform(-0.01, 0.01), which via the
     # tie also flattens the embeddings — near-zero embeddings stall training (run #19).
     # Re-init the shared matrix to the GPT-2 standard scale, good for both roles.
+    # pos_embed must match: nn.Embedding default is N(0,1), 50x the token scale, and
+    # the positional signal drowns the token identity in the sum (run #20).
     torch.nn.init.normal_(model.token_embed.weight, mean=0.0, std=0.02)
+    torch.nn.init.normal_(model.pos_embed.weight, mean=0.0, std=0.02)
 
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     criterion_train = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
