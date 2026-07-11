@@ -38,7 +38,7 @@ if __name__ == "__main__":
         n_heads=8,
         num_layers=6,
         ff_dim=1024,
-        dropout=0.2,  # Step 2 CHIUSO: 0.2 best (dev 33.79, riga #18)
+        dropout=0.1,  # trial #22: tying + dropout ridotto (0.2+tying = underfit, v. #21); se perde vs #18 revert tutto
     ).to(DEVICE)
     model.apply(init_weights)
     # init_weights must not break the tie (same Parameter object survives in-place re-init)
