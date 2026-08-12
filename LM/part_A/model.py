@@ -93,9 +93,6 @@ class GPT2(nn.Module):
 
         self.ln_f = nn.LayerNorm(d_model)
         self.lm_head = nn.Linear(d_model, vocab_size)
-        # Step 3 — weight tying: input embedding and output projection share the
-        # same vocab_size x d_model matrix (same Parameter object, ~12.9M params saved)
-        self.lm_head.weight = self.token_embed.weight
 
         mask = torch.tril(torch.ones(pos_emb_size, pos_emb_size)).unsqueeze(0).unsqueeze(0)
         self.register_buffer("mask", mask)

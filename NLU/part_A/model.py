@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, d_model, n_heads, dropout=0.1):
+    def __init__(self, d_model, n_heads):
         super().__init__()
         assert d_model % n_heads == 0
         self.n_heads = n_heads
@@ -40,7 +40,7 @@ class MultiHeadAttention(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, d_model, hidden_dim, dropout=0.1):
+    def __init__(self, d_model, hidden_dim):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(d_model, hidden_dim),
@@ -53,12 +53,12 @@ class FeedForward(nn.Module):
 
 
 class TransformerBlock(nn.Module):
-    def __init__(self, d_model, n_heads, ff_dim, dropout=0.1):
+    def __init__(self, d_model, n_heads, ff_dim):
         super().__init__()
         self.ln1 = nn.LayerNorm(d_model)
-        self.attn = MultiHeadAttention(d_model, n_heads, dropout)
+        self.attn = MultiHeadAttention(d_model, n_heads)
         self.ln2 = nn.LayerNorm(d_model)
-        self.ff = FeedForward(d_model, ff_dim, dropout)
+        self.ff = FeedForward(d_model, ff_dim)
 
     def forward(self, x, mask):
         x = x + self.attn(self.ln1(x), mask)
@@ -92,7 +92,7 @@ class GPT2(nn.Module):
         self.pos_embed = nn.Embedding(pos_emb_size, d_model)
 
         self.blocks = nn.ModuleList([
-            TransformerBlock(d_model, n_heads, ff_dim, dropout)
+            TransformerBlock(d_model, n_heads, ff_dim)
             for _ in range(num_layers)
         ])
 

@@ -1,6 +1,3 @@
-# Part 1.B — LoRA (Hu et al. 2021, arXiv:2106.09685) on pre-trained GPT2.
-# The adapters are hand-written: PEFT and similar libraries are not allowed here.
-
 from typing import Optional, Tuple, Union
 
 import torch
@@ -139,6 +136,3 @@ class GPT2_LoRA(GPT2LMHeadModel):
         super()._init_weights(module)
         if isinstance(module, LoRALinear):
             module.reset_lora_parameters()
-
-    def forward(self, *args, **kwargs):
-        return super().forward(*args, **kwargs)

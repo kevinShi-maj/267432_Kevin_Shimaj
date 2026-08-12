@@ -5,7 +5,9 @@ from utils import read_file, get_dataloaders
 import math
 import copy
 import os
+import random
 
+import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -14,6 +16,11 @@ from tqdm import tqdm
 
 
 if __name__ == "__main__":
+    seed = 42
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
     DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     train_raw = read_file("dataset/PennTreeBank/ptb.train.txt")
@@ -38,18 +45,9 @@ if __name__ == "__main__":
         n_heads=8,
         num_layers=6,
         ff_dim=1024,
-        dropout=0.1,  # trial #22: tying + dropout ridotto (0.2+tying = underfit, v. #21); se perde vs #18 revert tutto
+        dropout=0.2, 
     ).to(DEVICE)
     model.apply(init_weights)
-    # init_weights must not break the tie (same Parameter object survives in-place re-init)
-    assert model.lm_head.weight is model.token_embed.weight, "weight tying broken"
-    # init_weights re-inits lm_head (nn.Linear) to uniform(-0.01, 0.01), which via the
-    # tie also flattens the embeddings — near-zero embeddings stall training (run #19).
-    # Re-init the shared matrix to the GPT-2 standard scale, good for both roles.
-    # pos_embed must match: nn.Embedding default is N(0,1), 50x the token scale, and
-    # the positional signal drowns the token identity in the sum (run #20).
-    torch.nn.init.normal_(model.token_embed.weight, mean=0.0, std=0.02)
-    torch.nn.init.normal_(model.pos_embed.weight, mean=0.0, std=0.02)
 
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     criterion_train = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
